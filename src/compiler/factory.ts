@@ -2950,7 +2950,7 @@ namespace ts {
             node.declarationMapText = declarationMapTextOrBuildInfoPath;
             node.javascriptPath = javascriptPath;
             node.declarationPath = declarationPath,
-            node.buildInfoPath = buildInfoPath;
+                node.buildInfoPath = buildInfoPath;
             node.buildInfo = buildInfo;
             node.oldFileOfCurrentEmit = oldFileOfCurrentEmit;
         }
@@ -3461,7 +3461,7 @@ namespace ts {
 
     export function createMemberAccessForPropertyName(target: Expression, memberName: PropertyName, location?: TextRange): MemberExpression {
         if (isComputedPropertyName(memberName)) {
-             return setTextRange(createElementAccess(target, memberName.expression), location);
+            return setTextRange(createElementAccess(target, memberName.expression), location);
         }
         else {
             const expression = setTextRange(
@@ -4500,8 +4500,8 @@ namespace ts {
             const leftKind = getLiteralKindOfBinaryPlusOperand((<BinaryExpression>node).left);
             const literalKind = isLiteralKind(leftKind)
                 && leftKind === getLiteralKindOfBinaryPlusOperand((<BinaryExpression>node).right)
-                    ? leftKind
-                    : SyntaxKind.Unknown;
+                ? leftKind
+                : SyntaxKind.Unknown;
 
             (<BinaryPlusExpression>node).cachedLiteralKind = literalKind;
             return literalKind;
@@ -4724,7 +4724,7 @@ namespace ts {
                     if (stopAtCallExpressions) {
                         return node;
                     }
-                    // falls through
+                // falls through
                 case SyntaxKind.AsExpression:
                 case SyntaxKind.ElementAccessExpression:
                 case SyntaxKind.PropertyAccessExpression:
@@ -4747,7 +4747,7 @@ namespace ts {
         return body;
     }
 
-    export function isCommaSequence(node: Expression): node is BinaryExpression & {operatorToken: Token<SyntaxKind.CommaToken>} | CommaListExpression {
+    export function isCommaSequence(node: Expression): node is BinaryExpression & { operatorToken: Token<SyntaxKind.CommaToken> } | CommaListExpression {
         return node.kind === SyntaxKind.BinaryExpression && (<BinaryExpression>node).operatorToken.kind === SyntaxKind.CommaToken ||
             node.kind === SyntaxKind.CommaListExpression;
     }
@@ -4956,6 +4956,16 @@ namespace ts {
         }
         if (!file.isDeclarationFile && (options.out || options.outFile)) {
             return createLiteral(getExternalModuleNameFromPath(host, file.fileName));
+        }
+
+        if (!file.isDeclarationFile) {
+            
+            //根据路径自动产生一个仿as3的modulename 20190706，用 . 分开   
+            file.moduleName = getExternalModuleNameFromPath(host, file.fileName).replace(ts.directorySeparator, ".");
+            //如果有超过目标ES版本的代码，将会clone一个node并对此进行polyfill，原node设置到original下
+            if (file.original) 
+                (<SourceFile> file.original).moduleName = file.moduleName;
+            return createLiteral(file.moduleName);
         }
         return undefined;
     }

@@ -5,7 +5,7 @@ namespace ts {
     }
 
     function countLines(program: Program): number {
-        let count = 0;
+             let count = 0;
         forEach(program.getSourceFiles(), file => {
             count += getLineStarts(file).length;
         });
@@ -102,7 +102,7 @@ namespace ts {
                 return sys.exit(ExitStatus.DiagnosticsPresent_OutputsSkipped);
             }
 
-            const fileOrDirectory = normalizePath(commandLine.options.project);
+            const fileOrDirectory =normalizePath(commandLine.options.project);
             if (!fileOrDirectory /* current directory "." */ || sys.directoryExists(fileOrDirectory)) {
                 configFileName = combinePaths(fileOrDirectory, "tsconfig.json");
                 if (!sys.fileExists(configFileName)) {
