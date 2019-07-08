@@ -42,7 +42,9 @@ namespace ts {
         const transformers: TransformerFactory<SourceFile | Bundle>[] = [];
 
         addRange(transformers, customTransformers && map(customTransformers.before, wrapScriptTransformerFactory));
-
+        
+        transformers.push(transformFR);
+        
         transformers.push(transformTypeScript);
         transformers.push(transformClassFields);
 
