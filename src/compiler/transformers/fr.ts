@@ -29,7 +29,7 @@ namespace ts {
                         createNew(
                             createIdentifier("Error"), undefined, []))])),
 
-                            //增加一个__interface的静态属性
+            //增加一个__interface的静态属性
             createProperty(undefined,
                 [createToken(SyntaxKind.StaticKeyword)],
                 "__interface", undefined,

@@ -4957,16 +4957,7 @@ namespace ts {
         if (!file.isDeclarationFile && (options.out || options.outFile)) {
             return createLiteral(getExternalModuleNameFromPath(host, file.fileName));
         }
-
-        if (!file.isDeclarationFile) {
-
-            //根据路径自动产生一个仿as3的modulename 20190706，用 . 分开   
-            file.moduleName = getExternalModuleNameFromPath(host, file.fileName).replace(ts.directorySeparator, ".");
-            //如果有超过目标ES版本的代码，将会clone一个node并对此进行polyfill，原node设置到original下
-            if (file.original)
-                (<SourceFile>file.original).moduleName = file.moduleName;
-            return createLiteral(file.moduleName);
-        }
+        
         return undefined;
     }
 
