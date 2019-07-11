@@ -856,8 +856,7 @@ namespace ts {
                         frConfigPathCache.set(fileDirectory, configFilePath);
                     }
 
-
-                    sourceFile.moduleName = removeFileExtension(getRelativePathFromDirectory(getDirectoryPath(configFilePath), fileName, true)).replace(ts.directorySeparator, ".");
+                    sourceFile.moduleName = removeFileExtension(getRelativePathFromDirectory(getDirectoryPath(configFilePath), fileName, true)).replace(new RegExp(`\\${ts.directorySeparator}`,"g"), ".");
                 }
             }
             // ----------------------
