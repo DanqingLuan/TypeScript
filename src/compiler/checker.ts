@@ -16055,7 +16055,8 @@ namespace ts {
                     resolveName(
                         node,
                         node.escapedText,
-                        SymbolFlags.Value | SymbolFlags.ExportValue,
+                        //danqingLuan 20190720 ???? interface?Identifier???????????
+                        SymbolFlags.Value | SymbolFlags.ExportValue | SymbolFlags.Interface,
                         getCannotFindNameDiagnosticForName(node),
                         node,
                         !isWriteOnlyAccess(node),

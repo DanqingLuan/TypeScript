@@ -32,7 +32,7 @@ namespace ts {
             //增加一个__interface的静态属性
             createProperty(undefined,
                 [createToken(SyntaxKind.StaticKeyword)],
-                "__interface", undefined,
+                "__fr_interface", undefined,
                 createKeywordTypeNode(SyntaxKind.BooleanKeyword),
                 createIdentifier("true"))];
 
