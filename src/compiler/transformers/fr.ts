@@ -84,7 +84,21 @@ namespace ts {
             let es2015nodeArray: Node[] = [];
             function checkNode(node: Node) {
                 if (node.transformFlags & ts.TransformFlags.ContainsES2015) {
-                    if (node.kind == SyntaxKind.ClassDeclaration || node.kind == SyntaxKind.ClassExpression) {
+
+                    if (node.kind == SyntaxKind.SuperKeyword) {
+                        //如果有super的调用，则其上级全部开启es2015的转换，一直到 classdeclaration 或  classExpression
+                        //否则super将不会被转换
+                        let parent: Node = node.parent;
+                        while (parent && parent.kind != SyntaxKind.ClassDeclaration && parent.kind != SyntaxKind.ClassExpression) {
+                            let index = es2015nodeArray.indexOf(parent);
+                            if (index >= 0) {
+                                parent.transformFlags |= ts.TransformFlags.ContainsES2015;
+                                es2015nodeArray.splice(index, 1);
+                            }
+                            parent = parent.parent;
+                        }
+
+                    } else if (node.kind == SyntaxKind.ClassDeclaration || node.kind == SyntaxKind.ClassExpression) {
                         let commentRage = getLeadingCommentRangesOfNode(node, src);
                         if (commentRage) {
                             for (let comment of commentRage.map(r => src.text.slice(r.pos, r.end)))
