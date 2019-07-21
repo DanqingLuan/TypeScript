@@ -1,6 +1,7 @@
 /*@internal*/
 namespace ts {
     export function transformFR(context: TransformationContext) {
+
         return chainBundle(transformSourceFile);
 
         function transformSourceFile(node: SourceFile) {
@@ -9,12 +10,14 @@ namespace ts {
             }
 
             return visitEachChild(node, visitor, context);
+
         }
 
         function visitor(node: Node): VisitResult<Node> {
             switch (node.kind) {
                 case SyntaxKind.InterfaceDeclaration:
                     return visitInterfaceDeclaration(<InterfaceDeclaration>node);
+
                 default:
                     return visitEachChild(node, visitor, context);
             }
@@ -64,6 +67,63 @@ namespace ts {
             return createClassDeclaration(node.decorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, createNodeArray<ClassElement>(classMembers));
 
         }
-
     }
+
+    export function transformFR2(context: TransformationContext) {
+
+        let tf2015 = transformES2015(context);
+
+        return chainBundle(transformSourceFile);
+
+        function transformSourceFile(node: SourceFile) {
+            if (node.isDeclarationFile) {
+                return node;
+            }
+
+            let src = getSourceFileOfNode(node);
+            let es2015nodeArray: Node[] = [];
+            function checkNode(node: Node) {
+                if (node.transformFlags & ts.TransformFlags.ContainsES2015) {
+                    if (node.kind == SyntaxKind.ClassDeclaration || node.kind == SyntaxKind.ClassExpression) {
+                        let commentRage = getLeadingCommentRangesOfNode(node, src);
+                        if (commentRage) {
+                            for (let comment of commentRage.map(r => src.text.slice(r.pos, r.end)))
+                                if (comment.match(/^\/\/\s*@fr-es2015class/)) {
+                                    es2015nodeArray.push(node);
+                                    node.transformFlags &= ~ts.TransformFlags.ContainsES2015;
+                                }
+                        }
+                    } else {
+                        es2015nodeArray.push(node);
+                        node.transformFlags &= ~ts.TransformFlags.ContainsES2015;
+                    }
+                }
+
+                forEachChild(node, checkNode);
+            }
+
+
+            let result = visitEachChild(node, visitor, context);
+
+            //const languageVersion = getEmitScriptTarget(context.getCompilerOptions());
+            //在es2015模式下，class 也要进行转换，除非添加了 "//@fr-es2015class" 声明
+            //  if (languageVersion >= ScriptTarget.ES2015) {
+            forEachChild(node, checkNode);
+
+            result = <SourceFile>tf2015(result);
+            for (let i: number = 0; i < es2015nodeArray.length; i++) {
+                //还原
+                es2015nodeArray[i].transformFlags |= ts.TransformFlags.ContainsES2015;
+            }
+            //}
+
+            return result;
+        }
+
+        function visitor(node: Node): VisitResult<Node> {
+            return visitEachChild(node, visitor, context);
+        }
+    }
+
+
 }

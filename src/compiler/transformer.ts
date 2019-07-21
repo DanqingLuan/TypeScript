@@ -42,9 +42,9 @@ namespace ts {
         const transformers: TransformerFactory<SourceFile | Bundle>[] = [];
 
         addRange(transformers, customTransformers && map(customTransformers.before, wrapScriptTransformerFactory));
-        
+
         transformers.push(transformFR);
-        
+
         transformers.push(transformTypeScript);
         transformers.push(transformClassFields);
 
@@ -75,6 +75,9 @@ namespace ts {
         if (languageVersion < ScriptTarget.ES2015) {
             transformers.push(transformES2015);
             transformers.push(transformGenerators);
+        }else{
+            //es2015或更高版本也对class 进行转换以兼容as3模式的类
+            transformers.push(transformFR2);
         }
 
         transformers.push(getModuleTransformer(moduleKind));
