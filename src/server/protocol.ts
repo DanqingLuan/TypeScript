@@ -3025,6 +3025,7 @@ namespace ts.server.protocol {
         newLine?: NewLineKind | ts.NewLineKind;
         noEmit?: boolean;
         noEmitHelpers?: boolean;
+        noEmitUnderscoreUnderscoreESModule?: boolean;
         noEmitOnError?: boolean;
         noErrorTruncation?: boolean;
         noFallthroughCasesInSwitch?: boolean;

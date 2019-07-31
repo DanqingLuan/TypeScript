@@ -4684,6 +4684,7 @@ namespace ts {
         noEmit?: boolean;
         /*@internal*/noEmitForJsFiles?: boolean;
         noEmitHelpers?: boolean;
+        noEmitUnderscoreUnderscoreESModule?: boolean;
         noEmitOnError?: boolean;
         noErrorTruncation?: boolean;
         noFallthroughCasesInSwitch?: boolean;
@@ -5735,6 +5736,7 @@ namespace ts {
         newLine?: NewLineKind;
         omitTrailingSemicolon?: boolean;
         noEmitHelpers?: boolean;
+        noEmitUnderscoreUnderscoreESModule?: boolean;
         /*@internal*/ module?: CompilerOptions["module"];
         /*@internal*/ target?: CompilerOptions["target"];
         /*@internal*/ sourceMap?: boolean;

@@ -2537,6 +2537,7 @@ declare namespace ts {
         newLine?: NewLineKind;
         noEmit?: boolean;
         noEmitHelpers?: boolean;
+        noEmitUnderscoreUnderscoreESModule?: boolean;
         noEmitOnError?: boolean;
         noErrorTruncation?: boolean;
         noFallthroughCasesInSwitch?: boolean;
@@ -2999,6 +3000,7 @@ declare namespace ts {
         newLine?: NewLineKind;
         omitTrailingSemicolon?: boolean;
         noEmitHelpers?: boolean;
+        noEmitUnderscoreUnderscoreESModule?: boolean;
     }
     interface GetEffectiveTypeRootsHost {
         directoryExists?(directoryName: string): boolean;
