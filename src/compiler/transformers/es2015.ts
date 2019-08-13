@@ -960,8 +960,9 @@ namespace ts {
             // The assumption is that no prior step in the pipeline has added any prologue directives.
             let statementOffset = 0;
             if (!hasSynthesizedSuper) statementOffset = addStandardPrologue(prologue, constructor.body.statements, /*ensureUseStrict*/ false);
-            addDefaultValueAssignmentsIfNeeded(statements, constructor);
-            addRestParameterIfNeeded(statements, constructor, hasSynthesizedSuper);
+             //直接使用es6的 danqingLuan
+            //addDefaultValueAssignmentsIfNeeded(statements, constructor);
+            //addRestParameterIfNeeded(statements, constructor, hasSynthesizedSuper);
             if (!hasSynthesizedSuper) statementOffset = addCustomPrologue(statements, constructor.body.statements, statementOffset, visitor);
 
             // If the first statement is a call to `super()`, visit the statement directly
@@ -1181,10 +1182,10 @@ namespace ts {
             }
         }
 
-        function hasDefaultValueOrBindingPattern(node: ParameterDeclaration) {
-            return node.initializer !== undefined
-                || isBindingPattern(node.name);
-        }
+        // function hasDefaultValueOrBindingPattern(node: ParameterDeclaration) {
+        //     return node.initializer !== undefined
+        //         || isBindingPattern(node.name);
+        // }
 
         /**
          * Adds statements to the body of a function-like node if it contains parameters with
@@ -1193,31 +1194,31 @@ namespace ts {
          * @param statements The statements for the new function body.
          * @param node A function-like node.
          */
-        function addDefaultValueAssignmentsIfNeeded(statements: Statement[], node: FunctionLikeDeclaration): boolean {
-            if (!some(node.parameters, hasDefaultValueOrBindingPattern)) {
-                return false;
-            }
+        // function addDefaultValueAssignmentsIfNeeded(statements: Statement[], node: FunctionLikeDeclaration): boolean {
+        //     if (!some(node.parameters, hasDefaultValueOrBindingPattern)) {
+        //         return false;
+        //     }
 
-            let added = false;
-            for (const parameter of node.parameters) {
-                const { name, initializer, dotDotDotToken } = parameter;
+        //     let added = false;
+        //     for (const parameter of node.parameters) {
+        //         const { name, initializer, dotDotDotToken } = parameter;
 
-                // A rest parameter cannot have a binding pattern or an initializer,
-                // so let's just ignore it.
-                if (dotDotDotToken) {
-                    continue;
-                }
+        //         // A rest parameter cannot have a binding pattern or an initializer,
+        //         // so let's just ignore it.
+        //         if (dotDotDotToken) {
+        //             continue;
+        //         }
 
-                if (isBindingPattern(name)) {
-                    added = insertDefaultValueAssignmentForBindingPattern(statements, parameter, name, initializer) || added;
-                }
-                else if (initializer) {
-                    insertDefaultValueAssignmentForInitializer(statements, parameter, name, initializer);
-                    added = true;
-                }
-            }
-            return added;
-        }
+        //         if (isBindingPattern(name)) {
+        //             added = insertDefaultValueAssignmentForBindingPattern(statements, parameter, name, initializer) || added;
+        //         }
+        //         else if (initializer) {
+        //             insertDefaultValueAssignmentForInitializer(statements, parameter, name, initializer);
+        //             added = true;
+        //         }
+        //     }
+        //     return added;
+        // }
 
         /**
          * Adds statements to the body of a function-like node for parameters with binding patterns
@@ -1227,48 +1228,48 @@ namespace ts {
          * @param name The name of the parameter.
          * @param initializer The initializer for the parameter.
          */
-        function insertDefaultValueAssignmentForBindingPattern(statements: Statement[], parameter: ParameterDeclaration, name: BindingPattern, initializer: Expression | undefined): boolean {
-            // In cases where a binding pattern is simply '[]' or '{}',
-            // we usually don't want to emit a var declaration; however, in the presence
-            // of an initializer, we must emit that expression to preserve side effects.
-            if (name.elements.length > 0) {
-                insertStatementAfterCustomPrologue(
-                    statements,
-                    setEmitFlags(
-                        createVariableStatement(
-                            /*modifiers*/ undefined,
-                            createVariableDeclarationList(
-                                flattenDestructuringBinding(
-                                    parameter,
-                                    visitor,
-                                    context,
-                                    FlattenLevel.All,
-                                    getGeneratedNameForNode(parameter)
-                                )
-                            )
-                        ),
-                        EmitFlags.CustomPrologue
-                    )
-                );
-                return true;
-            }
-            else if (initializer) {
-                insertStatementAfterCustomPrologue(
-                    statements,
-                    setEmitFlags(
-                        createExpressionStatement(
-                            createAssignment(
-                                getGeneratedNameForNode(parameter),
-                                visitNode(initializer, visitor, isExpression)
-                            )
-                        ),
-                        EmitFlags.CustomPrologue
-                    )
-                );
-                return true;
-            }
-            return false;
-        }
+        // function insertDefaultValueAssignmentForBindingPattern(statements: Statement[], parameter: ParameterDeclaration, name: BindingPattern, initializer: Expression | undefined): boolean {
+        //     // In cases where a binding pattern is simply '[]' or '{}',
+        //     // we usually don't want to emit a var declaration; however, in the presence
+        //     // of an initializer, we must emit that expression to preserve side effects.
+        //     if (name.elements.length > 0) {
+        //         insertStatementAfterCustomPrologue(
+        //             statements,
+        //             setEmitFlags(
+        //                 createVariableStatement(
+        //                     /*modifiers*/ undefined,
+        //                     createVariableDeclarationList(
+        //                         flattenDestructuringBinding(
+        //                             parameter,
+        //                             visitor,
+        //                             context,
+        //                             FlattenLevel.All,
+        //                             getGeneratedNameForNode(parameter)
+        //                         )
+        //                     )
+        //                 ),
+        //                 EmitFlags.CustomPrologue
+        //             )
+        //         );
+        //         return true;
+        //     }
+        //     else if (initializer) {
+        //         insertStatementAfterCustomPrologue(
+        //             statements,
+        //             setEmitFlags(
+        //                 createExpressionStatement(
+        //                     createAssignment(
+        //                         getGeneratedNameForNode(parameter),
+        //                         visitNode(initializer, visitor, isExpression)
+        //                     )
+        //                 ),
+        //                 EmitFlags.CustomPrologue
+        //             )
+        //         );
+        //         return true;
+        //     }
+        //     return false;
+        // }
 
         /**
          * Adds statements to the body of a function-like node for parameters with initializers.
@@ -1278,37 +1279,37 @@ namespace ts {
          * @param name The name of the parameter.
          * @param initializer The initializer for the parameter.
          */
-        function insertDefaultValueAssignmentForInitializer(statements: Statement[], parameter: ParameterDeclaration, name: Identifier, initializer: Expression): void {
-            initializer = visitNode(initializer, visitor, isExpression);
-            const statement = createIf(
-                createTypeCheck(getSynthesizedClone(name), "undefined"),
-                setEmitFlags(
-                    setTextRange(
-                        createBlock([
-                            createExpressionStatement(
-                                setEmitFlags(
-                                    setTextRange(
-                                        createAssignment(
-                                            setEmitFlags(getMutableClone(name), EmitFlags.NoSourceMap),
-                                            setEmitFlags(initializer, EmitFlags.NoSourceMap | getEmitFlags(initializer) | EmitFlags.NoComments)
-                                        ),
-                                        parameter
-                                    ),
-                                    EmitFlags.NoComments
-                                )
-                            )
-                        ]),
-                        parameter
-                    ),
-                    EmitFlags.SingleLine | EmitFlags.NoTrailingSourceMap | EmitFlags.NoTokenSourceMaps | EmitFlags.NoComments
-                )
-            );
+        // function insertDefaultValueAssignmentForInitializer(statements: Statement[], parameter: ParameterDeclaration, name: Identifier, initializer: Expression): void {
+        //     initializer = visitNode(initializer, visitor, isExpression);
+        //     const statement = createIf(
+        //         createTypeCheck(getSynthesizedClone(name), "undefined"),
+        //         setEmitFlags(
+        //             setTextRange(
+        //                 createBlock([
+        //                     createExpressionStatement(
+        //                         setEmitFlags(
+        //                             setTextRange(
+        //                                 createAssignment(
+        //                                     setEmitFlags(getMutableClone(name), EmitFlags.NoSourceMap),
+        //                                     setEmitFlags(initializer, EmitFlags.NoSourceMap | getEmitFlags(initializer) | EmitFlags.NoComments)
+        //                                 ),
+        //                                 parameter
+        //                             ),
+        //                             EmitFlags.NoComments
+        //                         )
+        //                     )
+        //                 ]),
+        //                 parameter
+        //             ),
+        //             EmitFlags.SingleLine | EmitFlags.NoTrailingSourceMap | EmitFlags.NoTokenSourceMaps | EmitFlags.NoComments
+        //         )
+        //     );
 
-            startOnNewLine(statement);
-            setTextRange(statement, parameter);
-            setEmitFlags(statement, EmitFlags.NoTokenSourceMaps | EmitFlags.NoTrailingSourceMap | EmitFlags.CustomPrologue | EmitFlags.NoComments);
-            insertStatementAfterCustomPrologue(statements, statement);
-        }
+        //     startOnNewLine(statement);
+        //     setTextRange(statement, parameter);
+        //     setEmitFlags(statement, EmitFlags.NoTokenSourceMaps | EmitFlags.NoTrailingSourceMap | EmitFlags.CustomPrologue | EmitFlags.NoComments);
+        //     insertStatementAfterCustomPrologue(statements, statement);
+        // }
 
         /**
          * Gets a value indicating whether we need to add statements to handle a rest parameter.
@@ -1318,10 +1319,11 @@ namespace ts {
          *                                          part of a constructor declaration with a
          *                                          synthesized call to `super`
          */
-        function shouldAddRestParameter(node: ParameterDeclaration | undefined, inConstructorWithSynthesizedSuper: boolean): node is ParameterDeclaration {
-            return !!(node && node.dotDotDotToken && !inConstructorWithSynthesizedSuper);
-        }
+        // function shouldAddRestParameter(node: ParameterDeclaration | undefined, inConstructorWithSynthesizedSuper: boolean): node is ParameterDeclaration {
+        //     return !!(node && node.dotDotDotToken && !inConstructorWithSynthesizedSuper);
+        // }
 
+     
         /**
          * Adds statements to the body of a function-like node if it contains a rest parameter.
          *
@@ -1331,105 +1333,105 @@ namespace ts {
          *                                          part of a constructor declaration with a
          *                                          synthesized call to `super`
          */
-        function addRestParameterIfNeeded(statements: Statement[], node: FunctionLikeDeclaration, inConstructorWithSynthesizedSuper: boolean): boolean {
-            const prologueStatements: Statement[] = [];
-            const parameter = lastOrUndefined(node.parameters);
-            if (!shouldAddRestParameter(parameter, inConstructorWithSynthesizedSuper)) {
-                return false;
-            }
+        // function addRestParameterIfNeeded(statements: Statement[], node: FunctionLikeDeclaration, inConstructorWithSynthesizedSuper: boolean): boolean {
+        //     const prologueStatements: Statement[] = [];
+        //     const parameter = lastOrUndefined(node.parameters);
+        //     if (!shouldAddRestParameter(parameter, inConstructorWithSynthesizedSuper)) {
+        //         return false;
+        //     }
 
-            // `declarationName` is the name of the local declaration for the parameter.
-            const declarationName = parameter.name.kind === SyntaxKind.Identifier ? getMutableClone(parameter.name) : createTempVariable(/*recordTempVariable*/ undefined);
-            setEmitFlags(declarationName, EmitFlags.NoSourceMap);
+        //     // `declarationName` is the name of the local declaration for the parameter.
+        //     const declarationName = parameter.name.kind === SyntaxKind.Identifier ? getMutableClone(parameter.name) : createTempVariable(/*recordTempVariable*/ undefined);
+        //     setEmitFlags(declarationName, EmitFlags.NoSourceMap);
 
-            // `expressionName` is the name of the parameter used in expressions.
-            const expressionName = parameter.name.kind === SyntaxKind.Identifier ? getSynthesizedClone(parameter.name) : declarationName;
-            const restIndex = node.parameters.length - 1;
-            const temp = createLoopVariable();
+        //     // `expressionName` is the name of the parameter used in expressions.
+        //     const expressionName = parameter.name.kind === SyntaxKind.Identifier ? getSynthesizedClone(parameter.name) : declarationName;
+        //     const restIndex = node.parameters.length - 1;
+        //     const temp = createLoopVariable();
 
-            // var param = [];
-            prologueStatements.push(
-                setEmitFlags(
-                    setTextRange(
-                        createVariableStatement(
-                            /*modifiers*/ undefined,
-                            createVariableDeclarationList([
-                                createVariableDeclaration(
-                                    declarationName,
-                                    /*type*/ undefined,
-                                    createArrayLiteral([])
-                                )
-                            ])
-                        ),
-                        /*location*/ parameter
-                    ),
-                    EmitFlags.CustomPrologue
-                )
-            );
+        //     // var param = [];
+        //     prologueStatements.push(
+        //         setEmitFlags(
+        //             setTextRange(
+        //                 createVariableStatement(
+        //                     /*modifiers*/ undefined,
+        //                     createVariableDeclarationList([
+        //                         createVariableDeclaration(
+        //                             declarationName,
+        //                             /*type*/ undefined,
+        //                             createArrayLiteral([])
+        //                         )
+        //                     ])
+        //                 ),
+        //                 /*location*/ parameter
+        //             ),
+        //             EmitFlags.CustomPrologue
+        //         )
+        //     );
 
-            // for (var _i = restIndex; _i < arguments.length; _i++) {
-            //   param[_i - restIndex] = arguments[_i];
-            // }
-            const forStatement = createFor(
-                setTextRange(
-                    createVariableDeclarationList([
-                        createVariableDeclaration(temp, /*type*/ undefined, createLiteral(restIndex))
-                    ]),
-                    parameter
-                ),
-                setTextRange(
-                    createLessThan(
-                        temp,
-                        createPropertyAccess(createIdentifier("arguments"), "length")
-                    ),
-                    parameter
-                ),
-                setTextRange(createPostfixIncrement(temp), parameter),
-                createBlock([
-                    startOnNewLine(
-                        setTextRange(
-                            createExpressionStatement(
-                                createAssignment(
-                                    createElementAccess(
-                                        expressionName,
-                                        restIndex === 0
-                                            ? temp
-                                            : createSubtract(temp, createLiteral(restIndex))
-                                    ),
-                                    createElementAccess(createIdentifier("arguments"), temp)
-                                )
-                            ),
-                            /*location*/ parameter
-                        )
-                    )
-                ])
-            );
+        //     // for (var _i = restIndex; _i < arguments.length; _i++) {
+        //     //   param[_i - restIndex] = arguments[_i];
+        //     // }
+        //     const forStatement = createFor(
+        //         setTextRange(
+        //             createVariableDeclarationList([
+        //                 createVariableDeclaration(temp, /*type*/ undefined, createLiteral(restIndex))
+        //             ]),
+        //             parameter
+        //         ),
+        //         setTextRange(
+        //             createLessThan(
+        //                 temp,
+        //                 createPropertyAccess(createIdentifier("arguments"), "length")
+        //             ),
+        //             parameter
+        //         ),
+        //         setTextRange(createPostfixIncrement(temp), parameter),
+        //         createBlock([
+        //             startOnNewLine(
+        //                 setTextRange(
+        //                     createExpressionStatement(
+        //                         createAssignment(
+        //                             createElementAccess(
+        //                                 expressionName,
+        //                                 restIndex === 0
+        //                                     ? temp
+        //                                     : createSubtract(temp, createLiteral(restIndex))
+        //                             ),
+        //                             createElementAccess(createIdentifier("arguments"), temp)
+        //                         )
+        //                     ),
+        //                     /*location*/ parameter
+        //                 )
+        //             )
+        //         ])
+        //     );
 
-            setEmitFlags(forStatement, EmitFlags.CustomPrologue);
-            startOnNewLine(forStatement);
-            prologueStatements.push(forStatement);
+        //     setEmitFlags(forStatement, EmitFlags.CustomPrologue);
+        //     startOnNewLine(forStatement);
+        //     prologueStatements.push(forStatement);
 
-            if (parameter.name.kind !== SyntaxKind.Identifier) {
-                // do the actual destructuring of the rest parameter if necessary
-                prologueStatements.push(
-                    setEmitFlags(
-                        setTextRange(
-                            createVariableStatement(
-                                /*modifiers*/ undefined,
-                                createVariableDeclarationList(
-                                    flattenDestructuringBinding(parameter, visitor, context, FlattenLevel.All, expressionName),
-                                )
-                            ),
-                            parameter
-                        ),
-                        EmitFlags.CustomPrologue
-                    )
-                );
-            }
+        //     if (parameter.name.kind !== SyntaxKind.Identifier) {
+        //         // do the actual destructuring of the rest parameter if necessary
+        //         prologueStatements.push(
+        //             setEmitFlags(
+        //                 setTextRange(
+        //                     createVariableStatement(
+        //                         /*modifiers*/ undefined,
+        //                         createVariableDeclarationList(
+        //                             flattenDestructuringBinding(parameter, visitor, context, FlattenLevel.All, expressionName),
+        //                         )
+        //                     ),
+        //                     parameter
+        //                 ),
+        //                 EmitFlags.CustomPrologue
+        //             )
+        //         );
+        //     }
 
-            insertStatementsAfterCustomPrologue(statements, prologueStatements);
-            return true;
-        }
+        //     insertStatementsAfterCustomPrologue(statements, prologueStatements);
+        //     return true;
+        // }
 
         /**
          * Adds a statement to capture the `this` of a function declaration if it is needed.
@@ -1846,8 +1848,9 @@ namespace ts {
                 statementOffset = addStandardPrologue(prologue, body.statements, /*ensureUseStrict*/ false);
             }
 
-            multiLine = addDefaultValueAssignmentsIfNeeded(statements, node) || multiLine;
-            multiLine = addRestParameterIfNeeded(statements, node, /*inConstructorWithSynthesizedSuper*/ false) || multiLine;
+            //直接使用es6的 danqingLuan
+            //multiLine = addDefaultValueAssignmentsIfNeeded(statements, node) || multiLine;
+            //multiLine = addRestParameterIfNeeded(statements, node, /*inConstructorWithSynthesizedSuper*/ false) || multiLine;
 
             if (isBlock(body)) {
                 // addCustomPrologue puts already-existing directives at the beginning of the target statement-array

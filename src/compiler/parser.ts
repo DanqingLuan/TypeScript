@@ -844,7 +844,7 @@ namespace ts {
             processCommentPragmas(sourceFile as {} as PragmaContext, sourceText);
             processPragmasIntoFields(sourceFile as {} as PragmaContext, reportPragmaDiagnostic);
 
-            // danqingLuan 20190709
+            // danqingLuan 20190709 ，设置modulename
             if (!sourceFile.moduleName &&
                 //要先判断非 d.ts 不然会被当成 ts文件。。
                 !isDeclarationFileName(fileName) &&

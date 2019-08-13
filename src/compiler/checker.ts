@@ -16055,7 +16055,7 @@ namespace ts {
                     resolveName(
                         node,
                         node.escapedText,
-                        //danqingLuan 20190720 ???? interface?Identifier???????????
+                        //danqingLuan 20190720 对接口的引用也进行保留
                         SymbolFlags.Value | SymbolFlags.ExportValue | SymbolFlags.Interface,
                         getCannotFindNameDiagnosticForName(node),
                         node,
