@@ -80,14 +80,37 @@ namespace ts {
                 return node;
             }
 
-            let containsSuper: boolean = false;
             let src = getSourceFileOfNode(node);
             let es2015nodeArray: Node[] = [];
+            let checkStack: Array<Node> = [];
             function checkNode(node: Node) {
-
+                checkStack.push(node);
                 if (node.transformFlags & ts.TransformFlags.ContainsES2015) {
+
+                    //function的参数也使用 es6 模式
+                    if (isFunctionLike(node)) {
+                        if (node.parameters) {
+                            for (let par of node.parameters) {
+                                if (par.transformFlags & ts.TransformFlags.ContainsES2015) {
+                                    es2015nodeArray.push(node);
+                                    par.transformFlags &= ~ts.TransformFlags.ContainsES2015;
+                                }
+                            }
+                        }
+                    }
+
                     if (node.kind == SyntaxKind.SuperKeyword) {
-                        containsSuper = true;
+                        //如果有super的调用，则其上级全部开启es2015的转换，一直到 classdeclaration 或  classExpression 否则super将不会被转换
+                        for (let i = checkStack.length - 1; i >= 0; i--) {
+                            let stackNode = checkStack[i];
+                            if (stackNode.kind != SyntaxKind.ClassDeclaration && stackNode.kind != SyntaxKind.ClassExpression) {
+                                let index = es2015nodeArray.indexOf(stackNode);
+                                if (index >= 0) {
+                                    stackNode.transformFlags |= ts.TransformFlags.ContainsES2015;
+                                    es2015nodeArray.splice(index, 1);
+                                }
+                            } else break;
+                        }
                     } else if (node.kind == SyntaxKind.ClassDeclaration || node.kind == SyntaxKind.ClassExpression) {
                         let commentRage = getLeadingCommentRangesOfNode(node, src);
                         if (commentRage) {
@@ -97,24 +120,15 @@ namespace ts {
                                     node.transformFlags &= ~ts.TransformFlags.ContainsES2015;
                                 }
                         }
-                    } else {
+                    }
+                    else {
                         es2015nodeArray.push(node);
                         node.transformFlags &= ~ts.TransformFlags.ContainsES2015;
                     }
                 }
 
                 forEachChild(node, checkNode);
-                //如果有super的调用，则其上级全部开启es2015的转换，一直到 classdeclaration 或  classExpression 否则super将不会被转换
-                if (containsSuper) {
-                    if (node.kind != SyntaxKind.ClassDeclaration && node.kind != SyntaxKind.ClassExpression) {
-                        let index = es2015nodeArray.indexOf(node);
-                        if (index >= 0) {
-                            node.transformFlags |= ts.TransformFlags.ContainsES2015;
-                            es2015nodeArray.splice(index, 1);
-                        }
-
-                    }else containsSuper = false;
-                }
+                checkStack.pop();
             }
 
 
