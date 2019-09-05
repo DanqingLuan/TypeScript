@@ -248,7 +248,7 @@ node_modules/bluebird/js/release/reduce.js(133,18): error TS2339: Property 'prom
 node_modules/bluebird/js/release/schedule.js(7,26): error TS2339: Property 'getNativePromise' does not exist on type 'typeof ret'.
 node_modules/bluebird/js/release/schedule.js(8,10): error TS2339: Property 'isNode' does not exist on type 'typeof ret'.
 node_modules/bluebird/js/release/schedule.js(23,31): error TS2339: Property 'standalone' does not exist on type 'Navigator'.
-node_modules/bluebird/js/release/schedule.js(23,52): error TS2339: Property 'cordova' does not exist on type 'Window'.
+node_modules/bluebird/js/release/schedule.js(23,52): error TS2339: Property 'cordova' does not exist on type 'Window & typeof globalThis'.
 node_modules/bluebird/js/release/settle.js(10,6): error TS2339: Property 'inherits' does not exist on type 'typeof ret'.
 node_modules/bluebird/js/release/settle.js(13,10): error TS2339: Property '_values' does not exist on type 'SettledPromiseArray'.
 node_modules/bluebird/js/release/settle.js(14,32): error TS2339: Property '_totalResolved' does not exist on type 'SettledPromiseArray'.
@@ -299,7 +299,6 @@ node_modules/bluebird/js/release/using.js(78,20): error TS2339: Property 'doDisp
 node_modules/bluebird/js/release/using.js(97,23): error TS2339: Property 'data' does not exist on type 'FunctionDisposer'.
 node_modules/bluebird/js/release/using.js(131,72): error TS2339: Property 'classString' does not exist on type 'typeof ret'.
 node_modules/bluebird/js/release/using.js(223,15): error TS2350: Only a void function can be called with the 'new' keyword.
-node_modules/bluebird/js/release/util.js(200,32): error TS2339: Property 'foo' does not exist on type 'FakeConstructor'.
 node_modules/bluebird/js/release/util.js(279,45): error TS2345: Argument of type 'PropertyDescriptor | { value: any; } | undefined' is not assignable to parameter of type 'PropertyDescriptor & ThisType<any>'.
   Type 'undefined' is not assignable to type 'PropertyDescriptor & ThisType<any>'.
     Type 'undefined' is not assignable to type 'PropertyDescriptor'.

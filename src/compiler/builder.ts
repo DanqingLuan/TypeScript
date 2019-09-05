@@ -137,7 +137,7 @@ namespace ts {
          */
         emittedBuildInfo?: boolean;
         /**
-         * Already seen affected files
+         * Already seen emitted files
          */
         seenEmittedFiles: Map<true> | undefined;
         /**
@@ -329,7 +329,6 @@ namespace ts {
                         handleDtsMayChangeOfAffectedFile(state, affectedFile, cancellationToken, computeHash);
                         return affectedFile;
                     }
-                    seenAffectedFiles.set(affectedFile.path, true);
                     affectedFilesIndex++;
                 }
 
@@ -549,7 +548,7 @@ namespace ts {
      * This is called after completing operation on the next affected file.
      * The operations here are postponed to ensure that cancellation during the iteration is handled correctly
      */
-    function doneWithAffectedFile(state: BuilderProgramState, affected: SourceFile | Program, isPendingEmit?: boolean, isBuildInfoEmit?: boolean) {
+    function doneWithAffectedFile(state: BuilderProgramState, affected: SourceFile | Program, isPendingEmit?: boolean, isBuildInfoEmit?: boolean, isEmitResult?: boolean) {
         if (isBuildInfoEmit) {
             state.emittedBuildInfo = true;
         }
@@ -559,6 +558,9 @@ namespace ts {
         }
         else {
             state.seenAffectedFiles!.set((affected as SourceFile).path, true);
+            if (isEmitResult) {
+                (state.seenEmittedFiles || (state.seenEmittedFiles = createMap())).set((affected as SourceFile).path, true);
+            }
             if (isPendingEmit) {
                 state.affectedFilesPendingEmitIndex!++;
             }
@@ -573,6 +575,14 @@ namespace ts {
      */
     function toAffectedFileResult<T>(state: BuilderProgramState, result: T, affected: SourceFile | Program, isPendingEmit?: boolean, isBuildInfoEmit?: boolean): AffectedFileResult<T> {
         doneWithAffectedFile(state, affected, isPendingEmit, isBuildInfoEmit);
+        return { result, affected };
+    }
+
+    /**
+     * Returns the result with affected file
+     */
+    function toAffectedFileEmitResult(state: BuilderProgramState, result: EmitResult, affected: SourceFile | Program, isPendingEmit?: boolean, isBuildInfoEmit?: boolean): AffectedFileResult<EmitResult> {
+        doneWithAffectedFile(state, affected, isPendingEmit, isBuildInfoEmit, /*isEmitResult*/ true);
         return { result, affected };
     }
 
@@ -612,7 +622,8 @@ namespace ts {
      */
     function getProgramBuildInfo(state: Readonly<ReusableBuilderProgramState>, getCanonicalFileName: GetCanonicalFileName): ProgramBuildInfo | undefined {
         if (state.compilerOptions.outFile || state.compilerOptions.out) return undefined;
-        const buildInfoDirectory = getDirectoryPath(getNormalizedAbsolutePath(getOutputPathForBuildInfo(state.compilerOptions)!, Debug.assertDefined(state.program).getCurrentDirectory()));
+        const currentDirectory = Debug.assertDefined(state.program).getCurrentDirectory();
+        const buildInfoDirectory = getDirectoryPath(getNormalizedAbsolutePath(getOutputPathForBuildInfo(state.compilerOptions)!, currentDirectory));
         const fileInfos: MapLike<BuilderState.FileInfo> = {};
         state.fileInfos.forEach((value, key) => {
             const signature = state.currentAffectedFilesSignatures && state.currentAffectedFilesSignatures.get(key);
@@ -621,7 +632,7 @@ namespace ts {
 
         const result: ProgramBuildInfo = {
             fileInfos,
-            options: convertToReusableCompilerOptions(state.compilerOptions, relativeToBuildInfo)
+            options: convertToReusableCompilerOptions(state.compilerOptions, relativeToBuildInfoEnsuringAbsolutePath)
         };
         if (state.referencedMap) {
             const referencedMap: MapLike<string[]> = {};
@@ -660,6 +671,10 @@ namespace ts {
         }
 
         return result;
+
+        function relativeToBuildInfoEnsuringAbsolutePath(path: string) {
+            return relativeToBuildInfo(getNormalizedAbsolutePath(path, currentDirectory));
+        }
 
         function relativeToBuildInfo(path: string) {
             return ensurePathIsNonModuleName(getRelativePathFromDirectory(buildInfoDirectory, path, getCanonicalFileName));
@@ -844,7 +859,7 @@ namespace ts {
                         }
 
                         const affected = Debug.assertDefined(state.program);
-                        return toAffectedFileResult(
+                        return toAffectedFileEmitResult(
                             state,
                             // When whole program is affected, do emit only once (eg when --out or --outFile is specified)
                             // Otherwise just affected file
@@ -867,14 +882,14 @@ namespace ts {
                 }
             }
 
-            return toAffectedFileResult(
+            return toAffectedFileEmitResult(
                 state,
                 // When whole program is affected, do emit only once (eg when --out or --outFile is specified)
                 // Otherwise just affected file
                 Debug.assertDefined(state.program).emit(affected === state.program ? undefined : affected as SourceFile, writeFile || maybeBind(host, host.writeFile), cancellationToken, emitOnlyDtsFiles, customTransformers),
                 affected,
-                isPendingEmitFile
-            );
+                isPendingEmitFile,
+           );
         }
 
         /**
@@ -1031,7 +1046,7 @@ namespace ts {
             compilerOptions: convertFromReusableCompilerOptions(program.options, toAbsolutePath),
             referencedMap: getMapOfReferencedSet(program.referencedMap, toPath),
             exportedModulesMap: getMapOfReferencedSet(program.exportedModulesMap, toPath),
-            semanticDiagnosticsPerFile: program.semanticDiagnosticsPerFile && arrayToMap(program.semanticDiagnosticsPerFile, value => isString(value) ? value : value[0], value => isString(value) ? emptyArray : value[1]),
+            semanticDiagnosticsPerFile: program.semanticDiagnosticsPerFile && arrayToMap(program.semanticDiagnosticsPerFile, value => toPath(isString(value) ? value : value[0]), value => isString(value) ? emptyArray : value[1]),
             hasReusableDiagnostic: true
         };
         return {

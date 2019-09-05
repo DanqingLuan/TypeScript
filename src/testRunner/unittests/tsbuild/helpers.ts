@@ -1,4 +1,8 @@
 namespace ts {
+    export function errorDiagnostic(message: fakes.ExpectedDiagnosticMessage): fakes.ExpectedErrorDiagnostic {
+        return { message };
+    }
+
     export function getExpectedDiagnosticForProjectsInBuild(...projects: string[]): fakes.ExpectedDiagnostic {
         return [Diagnostics.Projects_in_this_build_Colon_0, projects.map(p => "\r\n    * " + p).join("")];
     }
@@ -42,6 +46,38 @@ namespace ts {
         fs.writeFileSync(path, `${old}${additionalContent}`);
     }
 
+    export function indexOf(fs: vfs.FileSystem, path: string, searchStr: string) {
+        if (!fs.statSync(path).isFile()) {
+            throw new Error(`File ${path} does not exist`);
+        }
+        const content = fs.readFileSync(path, "utf-8");
+        return content.indexOf(searchStr);
+    }
+
+    export function lastIndexOf(fs: vfs.FileSystem, path: string, searchStr: string) {
+        if (!fs.statSync(path).isFile()) {
+            throw new Error(`File ${path} does not exist`);
+        }
+        const content = fs.readFileSync(path, "utf-8");
+        return content.lastIndexOf(searchStr);
+    }
+
+    export function expectedLocationIndexOf(fs: vfs.FileSystem, file: string, searchStr: string): fakes.ExpectedDiagnosticLocation {
+        return {
+            file,
+            start: indexOf(fs, file, searchStr),
+            length: searchStr.length
+        };
+    }
+
+    export function expectedLocationLastIndexOf(fs: vfs.FileSystem, file: string, searchStr: string): fakes.ExpectedDiagnosticLocation {
+        return {
+            file,
+            start: lastIndexOf(fs, file, searchStr),
+            length: searchStr.length
+        };
+    }
+
     export function getTime() {
         let currentTime = 100;
         return { tick, time, touch };
@@ -66,7 +102,22 @@ namespace ts {
 interface ReadonlyArray<T> {}
 declare const console: { log(msg: any): void; };`;
 
-    export function loadProjectFromDisk(root: string, time?: vfs.FileSystemOptions["time"]): vfs.FileSystem {
+    export const symbolLibContent = `
+interface SymbolConstructor {
+    readonly species: symbol;
+    readonly toStringTag: symbol;
+}
+declare var Symbol: SymbolConstructor;
+interface Symbol {
+    readonly [Symbol.toStringTag]: string;
+}
+`;
+
+    export function loadProjectFromDisk(
+        root: string,
+        time?: vfs.FileSystemOptions["time"],
+        libContentToAppend?: string
+    ): vfs.FileSystem {
         const resolver = vfs.createResolver(Harness.IO);
         const fs = new vfs.FileSystem(/*ignoreCase*/ true, {
             files: {
@@ -76,10 +127,29 @@ declare const console: { log(msg: any): void; };`;
             meta: { defaultLibLocation: "/lib" },
             time
         });
-        fs.mkdirSync("/lib");
-        fs.writeFileSync("/lib/lib.d.ts", libContent);
-        fs.makeReadonly();
+        addLibAndMakeReadonly(fs, libContentToAppend);
         return fs;
+    }
+
+    export function loadProjectFromFiles(
+        files: vfs.FileSet,
+        time?: vfs.FileSystemOptions["time"],
+        libContentToAppend?: string
+    ): vfs.FileSystem {
+        const fs = new vfs.FileSystem(/*ignoreCase*/ true, {
+            files,
+            cwd: "/",
+            meta: { defaultLibLocation: "/lib" },
+            time
+        });
+        addLibAndMakeReadonly(fs, libContentToAppend);
+        return fs;
+    }
+
+    function addLibAndMakeReadonly(fs: vfs.FileSystem, libContentToAppend?: string) {
+        fs.mkdirSync("/lib");
+        fs.writeFileSync("/lib/lib.d.ts", libContentToAppend ? `${libContent}${libContentToAppend}` : libContent);
+        fs.makeReadonly();
     }
 
     export function verifyOutputsPresent(fs: vfs.FileSystem, outputs: readonly string[]) {
@@ -163,7 +233,7 @@ declare const console: { log(msg: any): void; };`;
         fs: vfs.FileSystem;
         tick: () => void;
         rootNames: ReadonlyArray<string>;
-        expectedMapFileNames: ReadonlyArray<string>;
+        expectedMapFileNames?: ReadonlyArray<string>;
         expectedBuildInfoFilesForSectionBaselines?: ReadonlyArray<BuildInfoSectionBaselineFiles>;
         modifyFs: (fs: vfs.FileSystem) => void;
     }
@@ -185,7 +255,7 @@ declare const console: { log(msg: any): void; };`;
             return originalReadFile.call(host, path);
         };
         builder.build();
-        generateSourceMapBaselineFiles(fs, expectedMapFileNames);
+        if (expectedMapFileNames) generateSourceMapBaselineFiles(fs, expectedMapFileNames);
         generateBuildInfoSectionBaselineFiles(fs, expectedBuildInfoFilesForSectionBaselines || emptyArray);
         fs.makeReadonly();
         return { fs, actualReadFileMap, host, builder };
@@ -232,9 +302,10 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
         tick: () => void;
         proj: string;
         rootNames: ReadonlyArray<string>;
-        expectedMapFileNames: ReadonlyArray<string>;
+        /** map file names to generate baseline of */
+        expectedMapFileNames?: ReadonlyArray<string>;
         expectedBuildInfoFilesForSectionBaselines?: ReadonlyArray<BuildInfoSectionBaselineFiles>;
-        lastProjectOutputJs: string;
+        lastProjectOutput: string;
         initialBuild: BuildState;
         outputFiles?: ReadonlyArray<string>;
         incrementalDtsChangedBuild?: BuildState;
@@ -246,7 +317,7 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
 
     export function verifyTsbuildOutput({
         scenario, projFs, time, tick, proj, rootNames, outputFiles, baselineOnly, verifyDiagnostics,
-        expectedMapFileNames, expectedBuildInfoFilesForSectionBaselines, lastProjectOutputJs,
+        expectedMapFileNames, expectedBuildInfoFilesForSectionBaselines, lastProjectOutput,
         initialBuild, incrementalDtsChangedBuild, incrementalDtsUnchangedBuild, incrementalHeaderChangedBuild
     }: VerifyTsBuildInput) {
         describe(`tsc --b ${proj}:: ${scenario}`, () => {
@@ -295,7 +366,7 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
                     let beforeBuildTime: number;
                     let afterBuildTime: number;
                     before(() => {
-                        beforeBuildTime = fs.statSync(lastProjectOutputJs).mtimeMs;
+                        beforeBuildTime = fs.statSync(lastProjectOutput).mtimeMs;
                         tick();
                         newFs = fs.shadow();
                         tick();
@@ -307,7 +378,7 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
                             expectedBuildInfoFilesForSectionBaselines,
                             modifyFs: incrementalModifyFs,
                         }));
-                        afterBuildTime = newFs.statSync(lastProjectOutputJs).mtimeMs;
+                        afterBuildTime = newFs.statSync(lastProjectOutput).mtimeMs;
                     });
                     after(() => {
                         newFs = undefined!;
@@ -321,6 +392,12 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
                     if (!baselineOnly || verifyDiagnostics) {
                         it(`verify diagnostics`, () => {
                             host.assertDiagnosticMessages(...(incrementalExpectedDiagnostics || emptyArray));
+                        });
+                    }
+                    else {
+                        // Build should pass without errors if not verifying diagnostics
+                        it(`verify no errors`, () => {
+                            host.assertErrors(/*empty*/);
                         });
                     }
                     it(`Generates files matching the baseline`, () => {
@@ -337,7 +414,6 @@ Mismatch Actual(path, actual, expected): ${JSON.stringify(arrayFrom(mapDefinedIt
                             fs: newFs.shadow(),
                             tick,
                             rootNames,
-                            expectedMapFileNames: emptyArray,
                             modifyFs: fs => {
                                 // Delete output files
                                 for (const outputFile of expectedOutputFiles) {

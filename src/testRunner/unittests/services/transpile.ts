@@ -3,6 +3,7 @@ namespace ts {
 
         interface TranspileTestSettings {
             options?: TranspileOptions;
+            noSetFileName?: boolean;
         }
 
         function transpilesCorrectly(name: string, input: string, testSettings: TranspileTestSettings) {
@@ -17,7 +18,10 @@ namespace ts {
 
                 transpileOptions = testSettings.options || {};
                 if (!transpileOptions.compilerOptions) {
-                    transpileOptions.compilerOptions = {};
+                    transpileOptions.compilerOptions = { };
+                }
+                if (transpileOptions.compilerOptions.target === undefined) {
+                    transpileOptions.compilerOptions.target = ScriptTarget.ES3;
                 }
 
                 if (transpileOptions.compilerOptions.newLine === undefined) {
@@ -27,15 +31,19 @@ namespace ts {
 
                 transpileOptions.compilerOptions.sourceMap = true;
 
-                if (!transpileOptions.fileName) {
-                    transpileOptions.fileName = transpileOptions.compilerOptions.jsx ? "file.tsx" : "file.ts";
+                let unitName = transpileOptions.fileName;
+                if (!unitName) {
+                    unitName = transpileOptions.compilerOptions.jsx ? "file.tsx" : "file.ts";
+                    if (!testSettings.noSetFileName) {
+                        transpileOptions.fileName = unitName;
+                    }
                 }
 
                 transpileOptions.reportDiagnostics = true;
 
                 justName = "transpile/" + name.replace(/[^a-z0-9\-. ]/ig, "") + (transpileOptions.compilerOptions.jsx ? Extension.Tsx : Extension.Ts);
                 toBeCompiled = [{
-                    unitName: transpileOptions.fileName,
+                    unitName,
                     content: input
                 }];
 
@@ -408,6 +416,18 @@ var x = 0;`, {
             options: { compilerOptions: { typeRoots: ["./folder"] }, fileName: "input.js", reportDiagnostics: true }
         });
 
+        transpilesCorrectly("Supports setting 'incremental'", "x;", {
+            options: { compilerOptions: { incremental: true }, fileName: "input.js", reportDiagnostics: true }
+        });
+
+        transpilesCorrectly("Supports setting 'composite'", "x;", {
+            options: { compilerOptions: { composite: true }, fileName: "input.js", reportDiagnostics: true }
+        });
+
+        transpilesCorrectly("Supports setting 'tsbuildinfo'", "x;", {
+            options: { compilerOptions: { incremental: true, tsBuildInfoFile: "./folder/config.tsbuildinfo" }, fileName: "input.js", reportDiagnostics: true }
+        });
+
         transpilesCorrectly("Correctly serialize metadata when transpile with CommonJS option",
             `import * as ng from "angular2/core";` +
             `declare function foo(...args: any[]);` +
@@ -452,6 +472,10 @@ var x = 0;`, {
 
         transpilesCorrectly("Supports 'as const' arrays", `([] as const).forEach(k => console.log(k));`, {
             options: { compilerOptions: { module: ModuleKind.CommonJS } }
+        });
+
+        transpilesCorrectly("Infer correct file extension", `const fn = <T>(a: T) => a`, {
+            noSetFileName: true
         });
     });
 }
